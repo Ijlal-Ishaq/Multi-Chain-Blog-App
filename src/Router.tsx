@@ -3,12 +3,13 @@ import { useEffect, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWeb3React } from "@web3-react/core";
 import { injected } from "./utils/connector";
+import Blog from "./Component/Blog";
 
 function Router() {
   const wallet = useWallet();
   const [address, setAddress] = useState<string | undefined>(undefined);
   const [selectedChain, setSelectedChain] = useState<string | undefined>(
-    undefined
+    "ethereum"
   );
   const web3ReactEht = useWeb3React();
 
@@ -29,10 +30,8 @@ function Router() {
   const disconnect = async () => {
     if (selectedChain === "solana") {
       await wallet.disconnect();
-      setSelectedChain(undefined);
     } else if (selectedChain === "ethereum") {
       web3ReactEht.deactivate();
-      setSelectedChain(undefined);
     }
   };
 
@@ -49,17 +48,27 @@ function Router() {
     >
       {wallet.connected || web3ReactEht.active ? (
         <div>
-          <div>Address: {address}</div>
-          <br />
-          <div>Selected Chain: {selectedChain}</div>
-          <br />
           <button
             onClick={() => {
               disconnect();
             }}
+            style={{
+              position: "fixed",
+              top: "9px",
+              right: "9px",
+              backgroundColor: "#016283",
+              border: "none",
+              fontSize: "19px",
+              padding: "9px 18px",
+              color: "#fff",
+              borderRadius: "9px",
+              fontWeight: "bold",
+            }}
           >
             Disconnect
           </button>
+
+          <Blog selectedChain={selectedChain} />
         </div>
       ) : (
         <>
@@ -89,6 +98,7 @@ function Router() {
           <select
             name="chains"
             id="selectchain"
+            value={selectedChain}
             style={{
               width: "100%",
               padding: "8px",
@@ -116,7 +126,7 @@ function Router() {
                   if (wallet?.wallets[0]?.adapter.name) {
                     wallet.select(wallet.wallets[0].adapter.name);
                     wallet.connect();
-                    setSelectedChain("solona");
+                    setSelectedChain("solana");
                   }
                 }}
                 style={{
@@ -135,7 +145,7 @@ function Router() {
               <br />
               <br />
             </>
-          ) : (
+          ) : selectedChain === "ethereum" ? (
             <>
               <button
                 onClick={() => {
@@ -158,7 +168,7 @@ function Router() {
               <br />
               <br />
             </>
-          )}
+          ) : null}
         </>
       )}
     </div>
