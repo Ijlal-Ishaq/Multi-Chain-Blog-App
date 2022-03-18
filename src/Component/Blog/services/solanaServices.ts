@@ -42,13 +42,9 @@ export async function getUserData(
   programAccountPubkey: any,
   setUserData: any
 ) {
-  console.log("aaa5");
-
   const encodedBio = await program?.account.blogAccount.fetch(
     programAccountPubkey!
   );
-
-  console.log("aaa5", new TextDecoder().decode(encodedBio?.bio));
 
   setUserData({
     address: programAccountPubkey?.toString()!,

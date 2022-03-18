@@ -14,6 +14,10 @@ function Router() {
   const web3ReactEht = useWeb3React();
 
   useEffect(() => {
+    wallet.disconnect();
+  }, []);
+
+  useEffect(() => {
     if (wallet.connected) {
       setAddress(wallet.publicKey?.toString());
       setSelectedChain("solana");

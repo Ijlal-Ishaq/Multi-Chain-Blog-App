@@ -8,6 +8,8 @@ import {
 import * as anchor from "@project-serum/anchor";
 import * as solServices from "./services/solanaServices";
 import * as ethServices from "./services/ethereumServices";
+import Web3 from "web3";
+import { useWeb3React } from "@web3-react/core";
 
 type Props = {
   selectedChain: string | undefined;
@@ -18,6 +20,7 @@ const Blog: React.FC<Props> = ({ selectedChain }) => {
   const [program, setProgram] = useState(undefined);
   const [programAccountPubkey, setProgramAccountPubkey] =
     useState<anchor.web3.PublicKey | null>(null);
+  const [contractAccountId, setContractAccountId] = useState<number>(0);
 
   const [userData, setUserData] = useState(undefined);
   const [name, setName] = useState("");
@@ -26,23 +29,36 @@ const Blog: React.FC<Props> = ({ selectedChain }) => {
   const anchorWallet = useAnchorWallet();
   const wallet = useWallet();
 
+  const web3context = useWeb3React();
+  const web3 = new Web3(web3context?.library?.currentProvider);
+
   useEffect(() => {
     if (selectedChain === "solana") {
       solServices.initProgram(setProgram, connection, anchorWallet);
     } else if (selectedChain === "ethereum") {
-      ethServices.initContract(setContract);
+      ethServices.initContract(setContract, web3);
     }
   }, [anchorWallet]);
 
   useEffect(() => {
-    if (program) {
-      solServices.extractBlogAccountPublicKey(
-        program,
-        anchorWallet,
-        setProgramAccountPubkey
-      );
+    if (selectedChain === "solana") {
+      if (program) {
+        solServices.extractBlogAccountPublicKey(
+          program,
+          anchorWallet,
+          setProgramAccountPubkey
+        );
+      }
+    } else if (selectedChain === "ethereum") {
+      if (contract) {
+        ethServices.getUserId(
+          contract,
+          setContractAccountId,
+          web3context.account
+        );
+      }
     }
-  }, [program]);
+  }, [program, contract]);
 
   useEffect(() => {
     if (selectedChain === "solana" && program) {
@@ -50,14 +66,23 @@ const Blog: React.FC<Props> = ({ selectedChain }) => {
         solServices.getUserData(program, programAccountPubkey, setUserData);
       }
     } else if (selectedChain === "ethereum" && contract) {
-      ethServices.getUserData(setUserData);
+      if (contractAccountId && contractAccountId > 0) {
+        ethServices.getUserData(contract, contractAccountId, setUserData);
+      }
     }
-  }, [program, contract, programAccountPubkey]);
+  }, [program, contract, programAccountPubkey, contractAccountId]);
 
-  const createAccount = () => {
+  const createAccount = async () => {
     if (selectedChain === "solana") {
       solServices.initializeAccount(setProgramAccountPubkey, program, name);
     } else if (selectedChain === "ethereum") {
+      //@ts-ignore
+      ethServices.initializeAccount(
+        contract,
+        name,
+        setContractAccountId,
+        web3context.account
+      );
     }
   };
 
@@ -75,14 +100,28 @@ const Blog: React.FC<Props> = ({ selectedChain }) => {
         setUserData
       );
     } else if (selectedChain === "ethereum") {
+      ethServices.makePost(
+        contract,
+        data,
+        web3context.account,
+        userData,
+        setUserData
+      );
     }
   };
 
   return (
     <div>
-      {programAccountPubkey ? (
+      {programAccountPubkey || contractAccountId > 0 ? (
         <>
-          <div style={{ color: "#fff", fontSize: "18px", fontWeight: "bold" }}>
+          <div
+            style={{
+              color: "#fff",
+              fontSize: "18px",
+              fontWeight: "bold",
+              width: "100%",
+            }}
+          >
             Account Address:
             <br />
             <div style={{ height: "8px", width: "100%" }} />
@@ -94,6 +133,7 @@ const Blog: React.FC<Props> = ({ selectedChain }) => {
                 backgroundColor: "#fec70b",
                 padding: "7px 14px",
                 borderRadius: "5px",
+                width: "100%",
               }}
             >
               {
@@ -103,7 +143,14 @@ const Blog: React.FC<Props> = ({ selectedChain }) => {
             </span>
           </div>
           <br />
-          <div style={{ color: "#fff", fontSize: "18px", fontWeight: "bold" }}>
+          <div
+            style={{
+              color: "#fff",
+              fontSize: "18px",
+              fontWeight: "bold",
+              width: "100%",
+            }}
+          >
             Account Name:
             <br />
             <div style={{ height: "8px", width: "100%" }} />
@@ -115,6 +162,7 @@ const Blog: React.FC<Props> = ({ selectedChain }) => {
                 backgroundColor: "#fec70b",
                 padding: "7px 14px",
                 borderRadius: "5px",
+                width: "100%",
               }}
             >
               {
@@ -124,25 +172,40 @@ const Blog: React.FC<Props> = ({ selectedChain }) => {
             </span>
           </div>
           <br />
-          <div style={{ color: "#fff", fontSize: "18px", fontWeight: "bold" }}>
+          <div
+            style={{
+              color: "#fff",
+              fontSize: "18px",
+              fontWeight: "bold",
+              width: "100%",
+            }}
+          >
             Latest Post:
             <br />
             <div style={{ height: "8px", width: "100%" }} />
-            <span
+            <div
               style={{
-                color: "#fff",
-                fontSize: "15px",
-                fontWeight: "light",
                 backgroundColor: "#fec70b",
-                padding: "7px 14px",
                 borderRadius: "5px",
+                padding: "7px 14px",
               }}
             >
-              {
-                //@ts-ignore
-                userData?.latestPost
-              }
-            </span>
+              <span
+                style={{
+                  color: "#fff",
+                  fontSize: "15px",
+                  fontWeight: "light",
+                  padding: "7px 14px",
+                  width: "100%",
+                  wordBreak: "break-all",
+                }}
+              >
+                {
+                  //@ts-ignore
+                  userData?.latestPost
+                }
+              </span>
+            </div>
           </div>
           <button
             style={{

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, FC } from "react";
+import React, { useMemo, useEffect, FC } from "react";
 import "./App.css";
 import { clusterApiUrl } from "@solana/web3.js";
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
